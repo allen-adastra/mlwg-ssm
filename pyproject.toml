@@ -1,0 +1,12 @@
+[project]
+name = "mlwg"
+version = "0.1.0"
+description = "Tutorial: Making Real Machines Work: Modelling with States, Actions and Observations"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "jax[cpu]",
+    "matplotlib",
+    "jupyter",
+    "numpy",
+]
