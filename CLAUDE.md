@@ -31,3 +31,4 @@ mlwg-state-space/
 - Use JAX for modelling and simulation.
 - Prefer matplotlib for plotting.
 - Reproducible: always set random seeds
+- Use ruff and pre-commit for formatting and linting (uv run ruff check, uv run ruff format)

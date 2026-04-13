@@ -14,8 +14,6 @@ cd mlwg-allenw
 # Create a virtual environment and install dependencies
 uv sync
 
-# Launch Jupyter
-uv run jupyter notebook
 ```
 
 Then open the notebooks in the `notebooks/` directory.
