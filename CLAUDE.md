@@ -19,7 +19,7 @@ mlwg-state-space/
 └── src/                     # Source code for the project.
     ├── system.py               # Toy dynamical system definition
     └── systems/                     # implementations of various dynamical systems.
-        ├── cartpole.py               # Cartpole system definition
+        └── cartpole/                     # Cartpole implementation.
 
 ```
 
@@ -32,3 +32,4 @@ mlwg-state-space/
 - Prefer matplotlib for plotting.
 - Reproducible: always set random seeds
 - Use ruff and pre-commit for formatting and linting (uv run ruff check, uv run ruff format)
+- Use Python fire for command line interfaces (e.g. for running simulations from the command line)

@@ -1,6 +1,9 @@
 # Making Real Machines Work: Modelling with States, Actions and Observations
 
-Tutorial materials for the MIT PSFC Machine Learning Working Group.
+Tutorial materials for the April 23rd 2026 session of the MIT PSFC Machine Learning Working Group.
+
+> [!WARNING]
+This repo was made for illustrative/didactic purposes. Most of the code was vibe-coded with Claude Code Opus/Sonnet 4.6.
 
 ## Setup
 
@@ -17,3 +20,10 @@ uv sync
 ```
 
 Then open the notebooks in the `notebooks/` directory.
+
+## Cartpole CLI
+
+```bash
+uv run cartpole-frame   # render a single static frame
+uv run cartpole-sim     # simulate and animate with zero force
+```

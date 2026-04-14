@@ -12,6 +12,16 @@ dependencies = [
     "numpy",
 ]
 
+[project.scripts]
+cartpole-frame = "src.systems.cartpole.cli:frame"
+cartpole-sim   = "src.systems.cartpole.cli:sim"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.uv]
+package = true
+
 [dependency-groups]
 dev = [
     "pre-commit>=4.5.1",
