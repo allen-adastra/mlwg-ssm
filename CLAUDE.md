@@ -8,6 +8,14 @@ Tutorial Title: "Making Real Machines Work: Modelling with States, Actions and O
 
 Abstract: It is important for us to get better at operating and controlling our tokamaks to not break SPARC and make everyone sad. Modelling for control and operations requires a somewhat different perspective: one focused on understanding how actions taken (e.g. voltages sent to power supplies) in the present map to future observations (e.g. voltages observed on magnetic probes). Fortunately, highly overlapping modelling paradigms have been developed by several communities to address the relationship between actions, system state, and observations. This tutorial will review classical perspectives developed by the control systems and reinforcement learning (RL) communities and touch upon recent developments such as action-conditioned world models with some hands on examples.
 
+## Learning Outcomes
+- The crucial distinction between your model and the real machine (physicists too often talk about the model as if it is the real machine).
+- A step-by-step introduction to the concepts of observations, states, and actions.
+- State-space models and POMDPs.
+- 
+    - Challenges of state estimation and simulation initialization
+    - State-space models and POMDPs
+
 ## Project Structure
 
 ```
