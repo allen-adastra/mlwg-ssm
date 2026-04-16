@@ -9,6 +9,7 @@ State vector:  [x, x_dot, theta, theta_dot]
 Action:  [F]  - horizontal force applied to the cart (N)
 
 Observation (default): full state [x, x_dot, theta, theta_dot]
+  With noise: each channel gets independent additive Gaussian noise.
 
 Equations of motion derived from the Lagrangian of the cart-pole system.
 See Florian (2007), "Correct equations for the dynamics of the cart-pole system".
@@ -31,8 +32,25 @@ class CartPoleParams(NamedTuple):
     b: float = 0.0  # cart friction coefficient (N·s/m)
 
 
+class ObservationNoiseParams(NamedTuple):
+    """Gaussian noise standard deviations for each observation channel.
+
+    Defaults mimic typical IMU / encoder measurement uncertainty:
+      - cart position:          ±1 cm  (0.01 m)
+      - cart velocity:          ±5 cm/s (0.05 m/s)
+      - pole angle:             ±0.3°  (0.005 rad)
+      - pole angular velocity:  ±2°/s  (0.035 rad/s)
+    """
+
+    x_std: float = 0.01
+    x_dot_std: float = 0.05
+    theta_std: float = 0.005
+    theta_dot_std: float = 0.035
+
+
 State = Float[Array, "4"]
 Action = Float[Array, "1"]
+Observation = Float[Array, "4"]
 
 
 def dynamics(state: State, action: Action, params: CartPoleParams) -> State:
@@ -102,13 +120,33 @@ def step(
     return state + (dt / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
-def observe(state: State, params: CartPoleParams) -> State:
-    """Observation function.
+def observe(
+    state: State,
+    params: CartPoleParams,
+    key: jax.Array | None = None,
+    noise: ObservationNoiseParams | None = None,
+) -> Observation:
+    """Observation function — full-state with optional Gaussian noise.
 
-    Default: full-state observation (no hidden state).
-    Returns [x, x_dot, theta, theta_dot].
+    Args:
+        state:  [x, x_dot, theta, theta_dot]
+        params: CartPoleParams (unused in default observation model)
+        key:    JAX PRNG key; if None, no noise is added
+        noise:  per-channel noise std deviations; defaults to
+                ObservationNoiseParams() when *key* is provided
+
+    Returns:
+        observation: [x, x_dot, theta, theta_dot] + noise (if key given)
     """
-    return state
+    obs = state
+    if key is not None:
+        if noise is None:
+            noise = ObservationNoiseParams()
+        std = jnp.array(
+            [noise.x_std, noise.x_dot_std, noise.theta_std, noise.theta_dot_std]
+        )
+        obs = obs + jax.random.normal(key, shape=(4,)) * std
+    return obs
 
 
 def rollout(
@@ -135,6 +173,55 @@ def rollout(
 
     _, subsequent_states = jax.lax.scan(scan_fn, initial_state, actions)
     return jnp.concatenate([initial_state[None], subsequent_states], axis=0)
+
+
+def rollout_with_obs(
+    initial_state: State,
+    actions: Float[Array, "T 1"],  # noqa: F722
+    params: CartPoleParams,
+    key: jax.Array,
+    noise: ObservationNoiseParams | None = None,
+    dt: float = 0.02,
+) -> tuple[Float[Array, "T+1 4"], Float[Array, "T+1 4"]]:  # noqa: F722
+    """Simulate a trajectory and produce noisy observations at every step.
+
+    Args:
+        initial_state: starting state [x, x_dot, theta, theta_dot]
+        actions:       array of shape (T, 1), one action per timestep
+        params:        CartPoleParams
+        key:           JAX PRNG key used to generate all observation noise
+        noise:         per-channel noise std deviations; uses
+                       ObservationNoiseParams defaults when None
+        dt:            integration timestep (s)
+
+    Returns:
+        states:       true states,        shape (T+1, 4)
+        observations: noisy observations, shape (T+1, 4)
+    """
+    if noise is None:
+        noise = ObservationNoiseParams()
+
+    std = jnp.array(
+        [noise.x_std, noise.x_dot_std, noise.theta_std, noise.theta_dot_std]
+    )
+    T = actions.shape[0]
+    # One key per timestep (index 0 = initial state observation)
+    keys = jax.random.split(key, T + 1)
+
+    def scan_fn(state, inputs):
+        action, obs_key = inputs
+        next_state = step(state, action, params, dt)
+        observation = next_state + jax.random.normal(obs_key, shape=(4,)) * std
+        return next_state, (next_state, observation)
+
+    _, (subsequent_states, subsequent_obs) = jax.lax.scan(
+        scan_fn, initial_state, (actions, keys[1:])
+    )
+
+    initial_obs = initial_state + jax.random.normal(keys[0], shape=(4,)) * std
+    states = jnp.concatenate([initial_state[None], subsequent_states], axis=0)
+    observations = jnp.concatenate([initial_obs[None], subsequent_obs], axis=0)
+    return states, observations
 
 
 class CartPole:
@@ -177,3 +264,14 @@ class CartPole:
         dt: float = 0.02,
     ) -> Float[Array, "T+1 4"]:  # noqa: F722
         return rollout(initial_state, actions, params, dt)
+
+    def rollout_with_obs(
+        self,
+        initial_state: State,
+        actions: Float[Array, "T 1"],  # noqa: F722
+        params: CartPoleParams,
+        key: jax.Array,
+        noise: ObservationNoiseParams | None = None,
+        dt: float = 0.02,
+    ) -> tuple[Float[Array, "T+1 4"], Float[Array, "T+1 4"]]:  # noqa: F722
+        return rollout_with_obs(initial_state, actions, params, key, noise, dt)

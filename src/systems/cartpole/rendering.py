@@ -31,6 +31,7 @@ _ACTION_LABELS = [
 ]
 _BLOCK_BG_STATES = "#F0F4FA"
 _BLOCK_BG_ACTIONS = "#F5F0FA"
+_OBS_COLOR = "#E07030"  # orange — noisy observations
 
 # ── Visual geometry constants (metres) ────────────────────────────────────────
 _CART_WIDTH = 0.5
@@ -293,15 +294,19 @@ def plot_trajectory(
     params: CartPoleParams,
     dt: float = 0.02,
     figsize: tuple[float, float] = (11, 7),
+    observations=None,
 ) -> plt.Figure:
     """Plot state and action trajectories in two visually distinct blocks.
 
     Args:
-        trajectory: array of shape (T+1, 4) from CartPole.rollout()
-        actions:    array of shape (T, 1), one action per timestep
-        params:     CartPoleParams (used for axis labels only)
-        dt:         simulation timestep (s)
-        figsize:    figure size in inches
+        trajectory:   array of shape (T+1, 4) from CartPole.rollout()
+        actions:      array of shape (T, 1), one action per timestep
+        params:       CartPoleParams (used for axis labels only)
+        dt:           simulation timestep (s)
+        figsize:      figure size in inches
+        observations: optional array of shape (T+1, 4) from rollout_with_obs();
+                      plotted as orange scatter dots on top of the true-state lines
+                      to illustrate sensor noise
 
     Returns:
         The matplotlib Figure.
@@ -310,6 +315,10 @@ def plot_trajectory(
 
         fig = plot_trajectory(trajectory, actions, params, dt=0.02)
         plt.show()
+
+        # With noisy observations:
+        states, obs = system.rollout_with_obs(s0, actions, params, key)
+        fig = plot_trajectory(states, actions, params, observations=obs)
     """
     T = len(actions)
     t_states = jnp.linspace(0.0, T * dt, T + 1)
@@ -322,8 +331,10 @@ def plot_trajectory(
 
     # ── States block ──────────────────────────────────────────────────────────
     subfigs[0].set_facecolor(_BLOCK_BG_STATES)
+
+    title_suffix = " + Observations" if observations is not None else ""
     subfigs[0].suptitle(
-        "States",
+        f"States{title_suffix}",
         fontsize=12,
         fontweight="bold",
         x=0.01,
@@ -334,13 +345,39 @@ def plot_trajectory(
     state_axes = subfigs[0].subplots(2, 2, sharex=True)
     for i, (ylabel, title) in enumerate(_STATE_LABELS):
         ax = state_axes.flat[i]
-        ax.plot(t_states, trajectory[:, i], color="#185FA5", linewidth=1.4)
+        ax.plot(
+            t_states,
+            trajectory[:, i],
+            color="#185FA5",
+            linewidth=1.4,
+            label="True state",
+            zorder=3,
+        )
+        if observations is not None:
+            ax.scatter(
+                t_states,
+                observations[:, i],
+                color=_OBS_COLOR,
+                s=6,
+                alpha=0.6,
+                label="Observation",
+                zorder=4,
+            )
         ax.set_title(title, fontsize=10)
         ax.set_ylabel(ylabel, fontsize=9)
         ax.grid(True, alpha=0.3)
         ax.set_facecolor(_BLOCK_BG_STATES)
         if i >= 2:  # bottom row
             ax.set_xlabel("Time (s)", fontsize=9)
+
+    if observations is not None:
+        # Single shared legend at the top-right of the states block
+        state_axes.flat[1].legend(
+            fontsize=8,
+            framealpha=0.8,
+            loc="upper right",
+            markerscale=2,
+        )
 
     # ── Actions block ─────────────────────────────────────────────────────────
     subfigs[1].set_facecolor(_BLOCK_BG_ACTIONS)
@@ -383,6 +420,7 @@ def animate_trajectory(
     figsize: tuple[float, float] = (16, 7),
     playback_speed: float = 1.0,
     x_range: float = 2.0,
+    observations=None,
 ) -> FuncAnimation:
     """Animate a cartpole trajectory with synchronised state/action time series.
 
@@ -392,6 +430,8 @@ def animate_trajectory(
       - Right-bottom: Actions block — one subplot per action channel
 
     A red vertical line in every time-series plot tracks the current frame.
+    If *observations* is provided, noisy observation dots are drawn on the
+    state plots in orange alongside the true-state lines.
 
     Args:
         trajectory:     array of shape (T+1, 4) from CartPole.rollout()
@@ -401,6 +441,7 @@ def animate_trajectory(
         figsize:        figure size in inches
         playback_speed: >1 speeds up, <1 slows down
         x_range:        half-width of the cartpole track (metres)
+        observations:   optional array of shape (T+1, 4) from rollout_with_obs()
 
     Returns:
         matplotlib FuncAnimation — display with ``HTML(anim.to_jshtml())``
@@ -475,7 +516,24 @@ def animate_trajectory(
     vlines: list = []
     for i, (ylabel, title) in enumerate(_STATE_LABELS):
         ax = state_axes[i]
-        ax.plot(t_states, trajectory[:, i], color="#185FA5", linewidth=1.4)
+        ax.plot(
+            t_states,
+            trajectory[:, i],
+            color="#185FA5",
+            linewidth=1.4,
+            label="True state",
+            zorder=3,
+        )
+        if observations is not None:
+            ax.scatter(
+                t_states,
+                observations[:, i],
+                color=_OBS_COLOR,
+                s=5,
+                alpha=0.55,
+                label="Observation",
+                zorder=4,
+            )
         ax.set_title(title, fontsize=9)
         ax.set_ylabel(ylabel, fontsize=8)
         ax.grid(True, alpha=0.3)
@@ -484,6 +542,11 @@ def animate_trajectory(
             ax.set_xlabel("Time (s)", fontsize=8)
         vl = ax.axvline(0.0, color="#E03030", linewidth=1.2, alpha=0.85, zorder=10)
         vlines.append(vl)
+
+    if observations is not None:
+        state_axes[1].legend(
+            fontsize=7, framealpha=0.8, loc="upper right", markerscale=2
+        )
 
     # ── Action time-series plot ────────────────────────────────────────────────
     n_actions = actions.shape[1]
