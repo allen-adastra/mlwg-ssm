@@ -11,11 +11,10 @@ Abstract: It is important for us to get better at operating and controlling our 
 ## Learning Outcomes
 - The crucial distinction between your model and the real machine (physicists too often talk about the model as if it is the real machine).
 - A step-by-step introduction to the concepts of observations, states, and actions.
-- State-space models and POMDPs.
-- 
+- State-space models
     - Challenges of state estimation and simulation initialization
-    - State-space models and POMDPs
-
+    - Learning dynamics models
+- 
 ## Project Structure
 
 ```

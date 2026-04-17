@@ -8,8 +8,9 @@ State vector:  [x, x_dot, theta, theta_dot]
 
 Action:  [F]  - horizontal force applied to the cart (N)
 
-Observation (default): full state [x, x_dot, theta, theta_dot]
-  With noise: each channel gets independent additive Gaussian noise.
+Observation: partial state [x, theta]
+  Only cart position and pole angle are observed; velocities are not.
+  Each channel gets independent additive Gaussian noise.
 
 Equations of motion derived from the Lagrangian of the cart-pole system.
 See Florian (2007), "Correct equations for the dynamics of the cart-pole system".
@@ -35,22 +36,18 @@ class CartPoleParams(NamedTuple):
 class ObservationNoiseParams(NamedTuple):
     """Gaussian noise standard deviations for each observation channel.
 
-    Defaults mimic typical IMU / encoder measurement uncertainty:
-      - cart position:          ±1 cm  (0.01 m)
-      - cart velocity:          ±5 cm/s (0.05 m/s)
-      - pole angle:             ±0.3°  (0.005 rad)
-      - pole angular velocity:  ±2°/s  (0.035 rad/s)
+    Defaults mimic typical sensor measurement uncertainty:
+      - cart position:  ±1 cm   (0.01 m)
+      - pole angle:     ±0.3°   (0.005 rad)
     """
 
     x_std: float = 0.01
-    x_dot_std: float = 0.05
     theta_std: float = 0.005
-    theta_dot_std: float = 0.035
 
 
 State = Float[Array, "4"]
 Action = Float[Array, "1"]
-Observation = Float[Array, "4"]
+Observation = Float[Array, "2"]
 
 
 def dynamics(state: State, action: Action, params: CartPoleParams) -> State:
@@ -126,7 +123,9 @@ def observe(
     key: jax.Array | None = None,
     noise: ObservationNoiseParams | None = None,
 ) -> Observation:
-    """Observation function — full-state with optional Gaussian noise.
+    """Observation function — partial state [x, theta] with optional Gaussian noise.
+
+    Only cart position and pole angle are observed; velocities are latent.
 
     Args:
         state:  [x, x_dot, theta, theta_dot]
@@ -136,16 +135,14 @@ def observe(
                 ObservationNoiseParams() when *key* is provided
 
     Returns:
-        observation: [x, x_dot, theta, theta_dot] + noise (if key given)
+        observation: [x, theta] + noise (if key given)
     """
-    obs = state
+    obs = jnp.array([state[0], state[2]])  # [x, theta]
     if key is not None:
         if noise is None:
             noise = ObservationNoiseParams()
-        std = jnp.array(
-            [noise.x_std, noise.x_dot_std, noise.theta_std, noise.theta_dot_std]
-        )
-        obs = obs + jax.random.normal(key, shape=(4,)) * std
+        std = jnp.array([noise.x_std, noise.theta_std])
+        obs = obs + jax.random.normal(key, shape=(2,)) * std
     return obs
 
 
@@ -182,8 +179,10 @@ def rollout_with_obs(
     key: jax.Array,
     noise: ObservationNoiseParams | None = None,
     dt: float = 0.02,
-) -> tuple[Float[Array, "T+1 4"], Float[Array, "T+1 4"]]:  # noqa: F722
-    """Simulate a trajectory and produce noisy observations at every step.
+) -> tuple[Float[Array, "T+1 4"], Float[Array, "T+1 2"]]:  # noqa: F722
+    """Simulate a trajectory and produce noisy partial observations at every step.
+
+    Only cart position and pole angle are observed; velocities are latent.
 
     Args:
         initial_state: starting state [x, x_dot, theta, theta_dot]
@@ -196,14 +195,12 @@ def rollout_with_obs(
 
     Returns:
         states:       true states,        shape (T+1, 4)
-        observations: noisy observations, shape (T+1, 4)
+        observations: noisy observations, shape (T+1, 2)  — [x, theta]
     """
     if noise is None:
         noise = ObservationNoiseParams()
 
-    std = jnp.array(
-        [noise.x_std, noise.x_dot_std, noise.theta_std, noise.theta_dot_std]
-    )
+    std = jnp.array([noise.x_std, noise.theta_std])
     T = actions.shape[0]
     # One key per timestep (index 0 = initial state observation)
     keys = jax.random.split(key, T + 1)
@@ -211,14 +208,20 @@ def rollout_with_obs(
     def scan_fn(state, inputs):
         action, obs_key = inputs
         next_state = step(state, action, params, dt)
-        observation = next_state + jax.random.normal(obs_key, shape=(4,)) * std
+        observation = (
+            jnp.array([next_state[0], next_state[2]])
+            + jax.random.normal(obs_key, shape=(2,)) * std
+        )
         return next_state, (next_state, observation)
 
     _, (subsequent_states, subsequent_obs) = jax.lax.scan(
         scan_fn, initial_state, (actions, keys[1:])
     )
 
-    initial_obs = initial_state + jax.random.normal(keys[0], shape=(4,)) * std
+    initial_obs = (
+        jnp.array([initial_state[0], initial_state[2]])
+        + jax.random.normal(keys[0], shape=(2,)) * std
+    )
     states = jnp.concatenate([initial_state[None], subsequent_states], axis=0)
     observations = jnp.concatenate([initial_obs[None], subsequent_obs], axis=0)
     return states, observations
