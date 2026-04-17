@@ -10,8 +10,7 @@ This repo was made for illustrative/didactic purposes. Most of the code was vibe
 ```bash
 git clone git@github.com:allen-adastra/mlwg-ssm.git
 cd mlwg-ssm
-bash install.sh
-source .venv/bin/activate
+./install.sh
 ```
 
 The script installs [uv](https://docs.astral.sh/uv/getting-started/installation/) if needed and syncs all dependencies. Then open the notebooks in the `notebooks/` directory.
