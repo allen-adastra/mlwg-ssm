@@ -7,23 +7,11 @@ This repo was made for illustrative/didactic purposes. Most of the code was vibe
 
 ## Setup
 
-You need [uv](https://docs.astral.sh/uv/getting-started/installation/) installed.
-
 ```bash
-# Clone the repo
-git clone <repo-url>
+git clone git@github.com:allen-adastra/mlwg-ssm.git
 cd mlwg-ssm
-
-# Create a virtual environment and install dependencies
-uv sync
-
+bash install.sh
+source .venv/bin/activate
 ```
 
-Then open the notebooks in the `notebooks/` directory.
-
-## Cartpole CLI
-
-```bash
-uv run cartpole-frame   # render a single static frame
-uv run cartpole-sim     # simulate and animate with zero force
-```
+The script installs [uv](https://docs.astral.sh/uv/getting-started/installation/) if needed and syncs all dependencies. Then open the notebooks in the `notebooks/` directory.
