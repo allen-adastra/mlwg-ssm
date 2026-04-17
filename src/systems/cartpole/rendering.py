@@ -1,16 +1,3 @@
-"""Matplotlib renderer for the cartpole system.
-
-Visual style inspired by the Gymnasium CartPole-v1 renderer:
-  - cart: dark-grey filled rectangle on a track
-  - pole: a thin rod pivoting from the cart centre
-  - axle: small filled circle at the pivot
-  - track: horizontal line with left/right limit markers
-
-Coordinate convention (matches dynamics.py):
-  theta = 0   →  pole pointing straight up
-  theta > 0   →  pole tilted counter-clockwise (to the left)
-"""
-
 import jax.numpy as jnp
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt

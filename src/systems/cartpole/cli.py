@@ -1,11 +1,3 @@
-"""CLI commands for cartpole rendering.
-
-Commands
---------
-cartpole-frame  Render a single static frame.
-cartpole-sim    Simulate with zero force and animate the result.
-"""
-
 import argparse
 
 import jax

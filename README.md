@@ -3,7 +3,7 @@
 Tutorial materials for the April 23rd 2026 session of the MIT PSFC Machine Learning Working Group.
 
 > [!WARNING]
-This repo was made for illustrative/didactic purposes. Most of the code was vibe-coded with Claude Code Opus/Sonnet 4.6.
+This repo was made for illustrative/didactic purposes. Most of the code was vibe-coded with Claude Code. Major bugs/issues may be present.
 
 ## Setup
 
@@ -12,7 +12,7 @@ You need [uv](https://docs.astral.sh/uv/getting-started/installation/) installed
 ```bash
 # Clone the repo
 git clone <repo-url>
-cd mlwg-allenw
+cd mlwg-ssm
 
 # Create a virtual environment and install dependencies
 uv sync

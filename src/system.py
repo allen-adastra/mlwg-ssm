@@ -1,13 +1,3 @@
-"""Base protocol for dynamical systems used throughout the tutorial.
-
-A system is defined by three functions:
-  - dynamics:  (state, action, params) -> state_dot   (continuous-time ODE RHS)
-  - step:      (state, action, params, dt) -> next_state  (discrete-time transition)
-  - observe:   (state, params) -> observation
-
-All functions must be JAX-compatible (jit/vmap/grad safe).
-"""
-
 from typing import Protocol, Any
 from jaxtyping import Array, Float
 

@@ -1,21 +1,3 @@
-"""Cartpole (inverted pendulum on a cart) dynamical system.
-
-State vector:  [x, x_dot, theta, theta_dot]
-  x         - cart position (m)
-  x_dot     - cart velocity (m/s)
-  theta     - pole angle from vertical, positive counter-clockwise (rad)
-  theta_dot - pole angular velocity (rad/s)
-
-Action:  [F]  - horizontal force applied to the cart (N)
-
-Observation: partial state [x, theta]
-  Only cart position and pole angle are observed; velocities are not.
-  Each channel gets independent additive Gaussian noise.
-
-Equations of motion derived from the Lagrangian of the cart-pole system.
-See Florian (2007), "Correct equations for the dynamics of the cart-pole system".
-"""
-
 from typing import NamedTuple
 
 import jax
@@ -34,15 +16,10 @@ class CartPoleParams(NamedTuple):
 
 
 class ObservationNoiseParams(NamedTuple):
-    """Gaussian noise standard deviations for each observation channel.
+    """Gaussian noise standard deviations for each observation channel."""
 
-    Defaults mimic typical sensor measurement uncertainty:
-      - cart position:  ±1 cm   (0.01 m)
-      - pole angle:     ±0.3°   (0.005 rad)
-    """
-
-    x_std: float = 0.01
-    theta_std: float = 0.005
+    x_std: float = 0.0025
+    theta_std: float = 0.0025
 
 
 State = Float[Array, "4"]
