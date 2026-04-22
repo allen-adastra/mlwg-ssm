@@ -1,5 +1,5 @@
 [project]
-name = "mlwg"
+name = "state_space_model"
 version = "0.1.0"
 description = "Tutorial: Making Real Machines Work: Modelling with States, Actions and Observations"
 readme = "README.md"
@@ -16,11 +16,11 @@ dependencies = [
 ]
 
 [project.scripts]
-cartpole-frame = "src.systems.cartpole.cli:frame"
-cartpole-sim   = "src.systems.cartpole.cli:sim"
+cartpole-frame = "state_space_model.systems.cartpole.cli:frame"
+cartpole-sim   = "state_space_model.systems.cartpole.cli:sim"
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["./src"]
 
 [tool.uv]
 package = true
